@@ -137,8 +137,10 @@ public class BlockListener implements Listener{
 		Block reinforcingBlock = null;
 		Reinforcement rein = rm.getReinforcement(Utility.getRealBlock(block));
 		
+        boolean isBlockPlant = isPlant(block);
+
 		//if block is a plant check reinforcement on soil block
-		if(isPlant(block)){
+		if(isBlockPlant){
         	reinforcingBlock = Utility.findPlantSoil(block);
         	Reinforcement plant = null;
         	if (reinforcingBlock != null)
@@ -148,7 +150,7 @@ public class BlockListener implements Listener{
 		}
 
 		if (rein == null){
-			rein = createNaturalReinforcement(event.getBlock(), player);
+			rein = createNaturalReinforcement(block, player);
 			if (rein != null){
 				ReinforcementDamageEvent e = new ReinforcementDamageEvent(rein, player, block);
 				Bukkit.getPluginManager().callEvent(e);
@@ -168,7 +170,7 @@ public class BlockListener implements Listener{
             PlayerReinforcement pr = (PlayerReinforcement) rein;
             PlayerState state = PlayerState.get(player);
             boolean admin_bypass = player.hasPermission("citadel.admin.bypassmode");   
-            if (reinforcingBlock != null && isPlant(block) && (pr.isAccessible(player, PermissionType.CROPS) || admin_bypass)) {
+            if (reinforcingBlock != null && isBlockPlant && (pr.isAccessible(player, PermissionType.CROPS) || admin_bypass)) {
                 //player has CROPS access to the soil block, allow them to break without affecting reinforcement
             	is_cancelled = false;
             } else if (state.isBypassMode() && (pr.isBypassable(player) || admin_bypass) && !pr.getGroup().isDisciplined()) {
@@ -250,10 +252,11 @@ public class BlockListener implements Listener{
     private static final Material matfire = Material.FIRE;
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
     public void blockBurn(BlockBurnEvent bbe) {
-        boolean wasprotected = maybeReinforcementDamaged(bbe.getBlock());
+        Block block = bbe.getBlock();
+        boolean wasprotected = maybeReinforcementDamaged(block);
         if (wasprotected) {
             bbe.setCancelled(wasprotected);
-        Block block = bbe.getBlock();
+            
             // Basic essential fire protection
             if (block.getRelative(0,1,0).getType() == matfire) {block.getRelative(0,1,0).setTypeId(0);} // Essential
             // Extended fire protection (recommend)
