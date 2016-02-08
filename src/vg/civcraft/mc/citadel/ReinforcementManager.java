@@ -26,6 +26,19 @@ public class ReinforcementManager {
 
 	private CitadelReinforcementData db;
 
+	/*
+		By reducing the precision of the Location the LoadingCache should have more hits for the same block.
+	*/
+	private Location reduceLocationPrecisionToInt(Location loc)
+	{
+		return new Location(
+				loc.getWorld(),
+				(double)loc.getBlockX(),
+				(double)loc.getBlockY(),
+				(double)loc.getBlockZ()
+		);
+	}
+
 	// This shit is cool
 	private RemovalListener<Location, Reinforcement> removalListener = new RemovalListener<Location, Reinforcement>() {
 		public void onRemoval(
@@ -82,7 +95,7 @@ public class ReinforcementManager {
 		// but it got this far.  Lets just keep the one already there and ignore this new one.
 		// If this is some other case then the code already in place should have deleted the reinforcement EX: Air.
 		if (getReinforcement(rein.getLocation()) == null) {
-			reinforcements.put(rein.getLocation(), rein);
+			reinforcements.put(reduceLocationPrecisionToInt(rein.getLocation()), rein);
 			CitadelStatics.updateHitStat(CitadelStatics.INSERT);
 			db.insertReinforcement(rein);
 		}
@@ -96,7 +109,7 @@ public class ReinforcementManager {
 	 */
 	public Reinforcement getReinforcement(Location loc) {
 		try {
-			Reinforcement rein = reinforcements.get(loc);
+			Reinforcement rein = reinforcements.get(reduceLocationPrecisionToInt(loc));
 			if (rein instanceof NullReinforcement)
 				return null;
 			CitadelStatics.updateHitStat(CitadelStatics.CACHE);
@@ -125,7 +138,7 @@ public class ReinforcementManager {
 	 * @param rein
 	 */
 	public void deleteReinforcement(Reinforcement rein) {
-		reinforcements.invalidate(rein.getLocation());
+		reinforcements.invalidate(reduceLocationPrecisionToInt(rein.getLocation());
 		CitadelStatics.updateHitStat(CitadelStatics.DELETE);
 		db.deleteReinforcement(rein);
 	}
@@ -187,14 +200,14 @@ public class ReinforcementManager {
 		List<Reinforcement> reins = db.getReinforcements(chunk);
 		List<Reinforcement> reins_new = new ArrayList<Reinforcement>();
 		for (Reinforcement rein: reins){
-			if (reinforcements.getIfPresent(rein.getLocation()) == null){
-				reinforcements.put(rein.getLocation(), rein);
+			if (reinforcements.getIfPresent(reduceLocationPrecisionToInt(rein.getLocation())) == null){
+				reinforcements.put(reduceLocationPrecisionToInt(rein.getLocation()), rein);
 				reins_new.add(rein);
 			}
 			else {
 				Reinforcement r = null;
 				try {
-					r = reinforcements.get(rein.getLocation());
+					r = reinforcements.get(reduceLocationPrecisionToInt(rein.getLocation()));
 				} catch (ExecutionException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -208,9 +221,9 @@ public class ReinforcementManager {
 	public void loadReinforcementChunk(Chunk chunk) {
 		List<Reinforcement> reins = db.getReinforcements(chunk);
 		for (Reinforcement rein: reins){
-			Reinforcement r = reinforcements.getIfPresent(rein.getLocation());
+			Reinforcement r = reinforcements.getIfPresent(reduceLocationPrecisionToInt(rein.getLocation()));
 			if (r == null || r instanceof NullReinforcement) {
-				reinforcements.put(rein.getLocation(), rein);
+				reinforcements.put(reduceLocationPrecisionToInt(rein.getLocation()), rein);
 			}
 		}
 	}
